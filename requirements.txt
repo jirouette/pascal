@@ -1,0 +1,5 @@
+discord.py[voice]
+requests
+youtube_dl
+gtts
+google-api-python-client
