@@ -54,7 +54,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class Voice(object):
     def __init__(self, bot):
         self.bot = bot
-        self.channel = None
+        self.client = None
         if not discord.opus.is_loaded():
             discord.opus.load_opus("libopus.so")
     
@@ -65,16 +65,16 @@ class Voice(object):
         return None
 
     async def youtube(self, ctx, URL):
-        if self.channel is None or not self.channel.is_connected():
+        if self.client is None or not self.client.is_connected():
             for channel in ctx.channel.guild.voice_channels:
                 if channel.id == int(os.environ.get('VOICE_CHANNEL')):
-                    self.channel = await channel.connect()
+                    self.client = await channel.connect()
                     break
         player = await YTDLSource.from_url(URL, loop=self.bot.loop)
         await self.stop()
-        self.channel.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        self.client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
 
     async def stop(self, *_, **__):
-        if self.channel is None or not self.channel.is_connected():
+        if self.client is None or not self.client.is_connected():
             return
-        self.channel.stop()
+        self.client.stop()
