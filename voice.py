@@ -61,11 +61,21 @@ class Voice(object):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.client = None
+        self.blocked = False
         if not discord.opus.is_loaded():
             discord.opus.load_opus("libopus.so")
         bot.voice = self
         init(bot)
     
+    def block(self) -> None:
+        self.blocked = True
+
+    def unblock(self) -> None:
+        self.blocked = False
+
+    def is_blocked(self) -> bool:
+        return self.blocked
+
     def search(self, text: str) -> typing.Optional[str]:
         response = youtube.search().list(q=text, part='id,snippet', maxResults=1).execute()
         for result in response.get('items', []):
@@ -118,11 +128,18 @@ async def is_not_banned(ctx: commands.Context) -> bool:
         return False
     return True
 
+async def is_not_blocked(ctx: commands.Context) -> bool:
+    if ctx.bot.voice.is_blocked():
+        await ctx.send('❌')
+        return False
+    return True
+
 def init(bot: commands.Bot) -> None:
     @bot.command()
     @commands.check(is_coming_from_text_channel)
     @commands.check(is_in_voice_channel)
     @commands.check(is_not_banned)
+    @commands.check(is_not_blocked)
     async def music(ctx: commands.Context, *args) -> None:
         text = " ".join(args)
         print(text)
@@ -156,3 +173,17 @@ def init(bot: commands.Bot) -> None:
     async def ban(ctx: commands.Context, member: discord.Member, duration: typing.Optional[int] = -1) -> None:
         await add_ban(ctx, member, duration*60)
         await ctx.send('🔨')
+
+    @bot.command()
+    @commands.check(is_coming_from_text_channel)
+    @commands.has_role(ADMIN_ROLE)
+    async def block(ctx: commands.Context) -> None:
+        ctx.bot.voice.block()
+        await ctx.send('👌')
+
+    @bot.command()
+    @commands.check(is_coming_from_text_channel)
+    @commands.has_role(ADMIN_ROLE)
+    async def unblock(ctx: commands.Context) -> None:
+        ctx.bot.voice.unblock()
+        await ctx.send('👌')
