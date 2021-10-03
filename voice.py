@@ -57,11 +57,18 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
+class Request(object):
+    def __init__(self, music: YTDLSource, user: discord.Member, query: str):
+        self.music = music
+        self.user = user
+        self.query = query
+
 class Voice(object):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.client = None
         self.blocked = False
+        self.queue = []
         if not discord.opus.is_loaded():
             discord.opus.load_opus("libopus.so")
         bot.voice = self
@@ -82,15 +89,36 @@ class Voice(object):
             return "https://www.youtube.com/watch?v=%s" % result['id']['videoId']
         return None
 
-    async def youtube(self, ctx: commands.Context, URL: str) -> None:
+    def play(self) -> None:
+        if not self.queue:
+            return
+        self.client.play(self.queue[0].music, after=self.next)
+
+    def next(self, e) -> None:
+        if not self.queue:
+            return
+        self.queue.pop(0)
+        self.play()
+
+    def get_current_track(self) -> typing.Optional[Request]:
+        if not self.queue:
+            return None
+        return self.queue[0]
+
+    def has_next_track(self) -> bool:
+        return len(self.queue) > 1
+
+    async def youtube(self, ctx: commands.Context, URL: str, query: typing.Optional[str] = None) -> None:
         if self.client is None or not self.client.is_connected():
             for channel in ctx.channel.guild.voice_channels:
                 if channel.id == int(os.environ.get('VOICE_CHANNEL')):
                     self.client = await channel.connect()
                     break
         player = await YTDLSource.from_url(URL, loop=self.bot.loop)
-        await self.stop()
-        self.client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        request = Request(player, ctx.author, query or URL)
+        self.queue.append(request)
+        if len(self.queue) == 1:
+            self.play()
 
     async def stop(self, *_, **__) -> None:
         if self.client is None or not self.client.is_connected():
@@ -134,6 +162,13 @@ async def is_not_blocked(ctx: commands.Context) -> bool:
         return False
     return True
 
+async def is_owner_of_current_track(ctx: commands.Context) -> bool:
+    is_admin = discord.utils.get(ctx.author.roles, id=ADMIN_ROLE)
+    if not ctx.bot.voice.has_next_track():
+        await ctx.send('🤷')
+        return False
+    return is_admin or ctx.author.id == current_track.user.id
+
 def init(bot: commands.Bot) -> None:
     @bot.command()
     @commands.check(is_coming_from_text_channel)
@@ -153,7 +188,7 @@ def init(bot: commands.Bot) -> None:
             return await ctx.send('🎵')
         URL = ctx.bot.voice.search(text)
         if URL:
-            await ctx.bot.voice.youtube(ctx, URL)
+            await ctx.bot.voice.youtube(ctx, URL, f"{text} ({URL})")
             return await ctx.send('🎵 '+URL)
         await ctx.send('😔')
 
@@ -187,3 +222,11 @@ def init(bot: commands.Bot) -> None:
     async def unblock(ctx: commands.Context) -> None:
         ctx.bot.voice.unblock()
         await ctx.send('👌')
+
+    @bot.command()
+    @commands.check(is_coming_from_text_channel)
+    @commands.check(is_owner_of_current_track)
+    async def skip(ctx: commands.Context) -> None:
+        await ctx.bot.voice.stop()
+        await ctx.send('⏭️'+ctx.bot.voice.queue[1].query)
+        ctx.bot.voice.next()
