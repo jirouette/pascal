@@ -19,7 +19,7 @@ class Temp(object):
         max_seconds = int(os.environ.get('MAX_TEMP_MESSAGE_DURATION'))
         pins = await channel.pins()
         while True:
-            async for message in channel.history():
+            async for message in channel.history(oldest_first=True, limit=300):
                 if message.id in [msg.id for msg in pins]:
                     continue
                 if datetime.timestamp(message.created_at) < (time.time()-max_seconds):
