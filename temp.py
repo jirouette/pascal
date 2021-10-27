@@ -17,8 +17,11 @@ class Temp(object):
     async def check_and_delete(self):
         channel = await self.bot.fetch_channel(int(os.environ.get('TEMP_CHANNEL')))
         max_seconds = int(os.environ.get('MAX_TEMP_MESSAGE_DURATION'))
+        pins = await channel.pins()
         while True:
             async for message in channel.history():
+                if message.id in [msg.id for msg in pins]:
+                    continue
                 if datetime.timestamp(message.created_at) < (time.time()-max_seconds):
                     await message.delete()
             await asyncio.sleep(60)
