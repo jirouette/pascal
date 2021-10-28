@@ -17,8 +17,8 @@ class Temp(object):
     async def check_and_delete(self):
         channel = await self.bot.fetch_channel(int(os.environ.get('TEMP_CHANNEL')))
         max_seconds = int(os.environ.get('MAX_TEMP_MESSAGE_DURATION'))
-        pins = await channel.pins()
         while True:
+            pins = await channel.pins()
             async for message in channel.history(oldest_first=True, limit=300):
                 if message.id in [msg.id for msg in pins]:
                     continue
