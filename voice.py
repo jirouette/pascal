@@ -4,6 +4,7 @@
 import discord
 import youtube_dl
 import time
+import asyncio
 import typing
 import os
 from discord.ext import commands
@@ -46,7 +47,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.url = data.get('url')
 
     @classmethod
-    async def from_url(cls, url: str, *, loop=None, stream=False):
+    async def from_url(cls, url: str, *, loop=None, stream=True):
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
@@ -167,7 +168,7 @@ async def is_owner_of_current_track(ctx: commands.Context) -> bool:
     if not ctx.bot.voice.has_next_track():
         await ctx.send('🤷')
         return False
-    return is_admin or ctx.author.id == current_track.user.id
+    return is_admin or ctx.author.id == ctx.bot.voice.get_current_track().user.id
 
 def init(bot: commands.Bot) -> None:
     @bot.command()
