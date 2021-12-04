@@ -9,5 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 ADD pascal.py .
 ADD voice.py .
 ADD temp.py .
+ADD rss.py .
 
 CMD ["python", "-u", "pascal.py"]

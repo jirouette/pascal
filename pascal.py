@@ -5,6 +5,7 @@ import os
 from discord.ext import commands
 from voice import Voice
 from temp import Temp
+from rss import Rss
 
 class Pascal(commands.Bot):
     async def on_ready(self):
@@ -13,6 +14,8 @@ class Pascal(commands.Bot):
         print("Initialized Voice")
         temp = Temp(bot)
         print("Initialized Temp")
+        rss = Rss(bot)
+        print("Initialized RSS")
         print('Ready. ')
 
     async def on_command_error(self, ctx, error):
