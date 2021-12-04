@@ -17,8 +17,8 @@ class Rss(object):
     
     async def check_rss_and_send(self):
         channel = discord.Webhook.from_url(os.environ.get('RSS_WEBHOOK'), adapter=discord.RequestsWebhookAdapter())
-        news_feed = feedparser.parse(os.environ.get('RSS_URL'))
         while True:
+            news_feed = feedparser.parse(os.environ.get('RSS_URL'))
             with open(os.environ.get('RSS_LAST_ENTRY_FILENAME')) as f:
                 guid = f.read()
             first_guid = None
