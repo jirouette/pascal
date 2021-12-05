@@ -2,11 +2,10 @@
 #coding: utf8
 
 import discord
-import time
 import asyncio
 import os
 import feedparser
-from datetime import datetime
+import redis
 from discord.ext import commands
 
 
@@ -19,8 +18,8 @@ class Rss(object):
         channel = discord.Webhook.from_url(os.environ.get('RSS_WEBHOOK'), adapter=discord.RequestsWebhookAdapter())
         while True:
             news_feed = feedparser.parse(os.environ.get('RSS_URL'))
-            with open(os.environ.get('RSS_LAST_ENTRY_FILENAME')) as f:
-                guid = f.read()
+            r = redis.Redis(host='redis')
+            guid = r.get('LAST_ENTRY').decode('utf-8')
             first_guid = None
             for entry in news_feed.entries:
                 if first_guid is None:
@@ -28,6 +27,5 @@ class Rss(object):
                 if guid == entry.guid:
                     break
                 channel.send(entry.link, username=os.environ.get("RSS_USERNAME"), avatar_url=os.environ.get("RSS_AVATAR_URL"))
-            with open(os.environ.get('RSS_LAST_ENTRY_FILENAME'), 'w') as f:
-                f.write(first_guid)
+            r.set('LAST_ENTRY', first_guid)
             await asyncio.sleep(60)
