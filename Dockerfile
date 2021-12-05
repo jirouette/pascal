@@ -10,5 +10,6 @@ ADD pascal.py .
 ADD voice.py .
 ADD temp.py .
 ADD rss.py .
+ADD vote.py .
 
 CMD ["python", "-u", "pascal.py"]
