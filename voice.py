@@ -91,7 +91,7 @@ class Voice(object):
         return None
 
     def play(self) -> None:
-        if not self.queue:
+        if not self.queue or not self.client:
             return
         self.client.play(self.queue[0].music, after=self.next)
 
@@ -109,14 +109,15 @@ class Voice(object):
     def has_next_track(self) -> bool:
         return len(self.queue) > 1
 
-    async def youtube(self, ctx: commands.Context, URL: str, query: typing.Optional[str] = None) -> None:
-        if self.client is None or not self.client.is_connected():
-            for channel in ctx.channel.guild.voice_channels:
-                if channel.id == int(os.environ.get('VOICE_CHANNEL')):
-                    self.client = await channel.connect()
-                    break
+    async def youtube(self, ctx: typing.Optional[commands.Context], URL: str, query: typing.Optional[str] = None) -> None:
+        if ctx is not None:
+            if self.client is None or not self.client.is_connected():
+                for channel in ctx.channel.guild.voice_channels:
+                    if channel.id == int(os.environ.get('VOICE_CHANNEL')):
+                        self.client = await channel.connect()
+                        break
         player = await YTDLSource.from_url(URL, loop=self.bot.loop)
-        request = Request(player, ctx.author, query or URL)
+        request = Request(player, ctx.author if ctx else Ellipsis, query or URL)
         self.queue.append(request)
         if len(self.queue) == 1:
             self.play()
@@ -168,7 +169,8 @@ async def is_owner_of_current_track(ctx: commands.Context) -> bool:
     if not ctx.bot.voice.has_next_track():
         await ctx.send('🤷')
         return False
-    return is_admin or ctx.author.id == ctx.bot.voice.get_current_track().user.id
+    current_track = ctx.bot.voice.get_current_track()
+    return is_admin or current_track.user is Ellipsis or ctx.author.id == current_track.user.id
 
 def init(bot: commands.Bot) -> None:
     @bot.command()
@@ -222,6 +224,14 @@ def init(bot: commands.Bot) -> None:
     @commands.has_role(ADMIN_ROLE)
     async def unblock(ctx: commands.Context) -> None:
         ctx.bot.voice.unblock()
+        await ctx.send('👌')
+
+    @bot.command()
+    @commands.check(is_coming_from_text_channel)
+    @commands.has_role(ADMIN_ROLE)
+    async def stop(ctx: commands.Context) -> None:
+        await ctx.bot.voice.stop()
+        ctx.bot.voice.queue = []
         await ctx.send('👌')
 
     @bot.command()

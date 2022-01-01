@@ -11,5 +11,6 @@ ADD voice.py .
 ADD temp.py .
 ADD rss.py .
 ADD vote.py .
+ADD radio.py .
 
 CMD ["python", "-u", "pascal.py"]

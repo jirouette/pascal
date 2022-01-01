@@ -7,6 +7,7 @@ from voice import Voice
 from temp import Temp
 from rss import Rss
 from vote import Vote
+from radio import Radio
 
 class Pascal(commands.Bot):
     async def on_ready(self):
@@ -19,6 +20,8 @@ class Pascal(commands.Bot):
         print("Initialized RSS")
         vote = Vote(bot)
         print("Initialized Vote.")
+        radio = Radio(voice)
+        print("Initialized Radio.")
         print('Ready. ')
 
     async def on_command_error(self, ctx, error):
