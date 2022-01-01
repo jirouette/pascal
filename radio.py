@@ -40,7 +40,6 @@ class Radio(object):
             if self.voice.queue or not self.playlist:
                 continue
             URL = random.choice(self.playlist)
-            await channel.send('🔀🎵 '+URL)
             try:
                 await self.voice.youtube(None, URL)
             except:

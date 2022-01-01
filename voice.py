@@ -56,6 +56,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
+        data['url'] = url
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 class Request(object):
@@ -94,9 +95,21 @@ class Voice(object):
         if not self.queue or not self.client:
             return
         self.client.play(self.queue[0].music, after=self.next)
+        self.bot.loop.create_task(self.reload_activity())
+
+    async def reload_activity(self) -> None:
+        track = self.get_current_track()
+        activity = None
+        if track is not None:
+            activity = discord.Activity(
+                type=discord.ActivityType.listening,
+                name=f"!track − {track.music.title}"
+            )
+        await self.bot.change_presence(activity=activity)
 
     def next(self, e) -> None:
         if not self.queue:
+            self.bot.loop.create_task(self.reload_activity())
             return
         self.queue.pop(0)
         self.play()
@@ -233,6 +246,15 @@ def init(bot: commands.Bot) -> None:
         await ctx.bot.voice.stop()
         ctx.bot.voice.queue = []
         await ctx.send('👌')
+
+    @bot.command()
+    @commands.check(is_coming_from_text_channel)
+    async def track(ctx: commands.Context) -> None:
+        track = ctx.bot.voice.get_current_track()
+        if track is None:
+            await ctx.send('🙅‍♂️')
+            return
+        await ctx.send(f"**{track.music.title}** ({track.music.url})")
 
     @bot.command()
     @commands.check(is_coming_from_text_channel)
