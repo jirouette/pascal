@@ -25,7 +25,7 @@ class Rss(object):
             for entry in news_feed.entries:
                 if pub_date is None:
                     pub_date = entry.published
-                if last_entry_pub_date <= parser.parse(entry.published):
+                if last_entry_pub_date >= parser.parse(entry.published):
                     break
                 channel.send(entry.link, username=os.environ.get("RSS_USERNAME"), avatar_url=os.environ.get("RSS_AVATAR_URL"))
             r.set('LAST_ENTRY', pub_date)
