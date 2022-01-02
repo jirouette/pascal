@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 #coding: utf8
 
-import discord
-import asyncio
 import os
 import redis
 from discord.ext import commands
@@ -16,7 +14,7 @@ class Vote(object):
             r = redis.Redis(host='redis')
             r.set('TOKEN_'+str(ctx.message.author.id), token)
             await ctx.send('Token enregistré ! 😌')
-        
+
         @bot.event
         async def on_raw_reaction_add(payload):
             if payload.channel_id != int(os.environ.get('VOTE_CHANNEL_ID')):
@@ -48,3 +46,13 @@ class Vote(object):
             token = token.decode('utf-8')
             if payload.name == '👍' or payload.name == '👎':
                 pass # TODO implement vote
+
+        @bot.event
+        async def on_message(message):
+            await bot.process_commands(message)
+            if message.channel.id != int(os.environ.get('VOTE_CHANNEL_ID')):
+                return
+            await message.add_reaction('👍')
+            await message.add_reaction('👎')
+            await message.add_reaction('✅')
+            await message.add_reaction('❌')
