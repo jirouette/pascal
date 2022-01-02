@@ -5,3 +5,4 @@ gtts
 google-api-python-client
 feedparser
 redis
+python-dateutil
